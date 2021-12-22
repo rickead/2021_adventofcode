@@ -2013,6 +2013,8 @@ fn main() {
     // sliding window
     let sliding_count = average_increases(&measurements);
     println!("How many sums are larger than the previous sum? {}", sliding_count);
+
+    println!("Same results using the optimized method? {}", fourth_delta(&measurements));
 }
 
 
@@ -2034,12 +2036,29 @@ fn sum_last_three(x: &[i32], index: usize) -> i32 {
 
 fn average_increases(x: &[i32]) -> i32 {
     let mut count:i32 = 0;
+    // There are ways to optimize this. This loop is O(n), but each n is six summations.
+    // One could use the sliding filter approach, where you subtract the oldest value and
+    // add the newest value for each sum. This would require four operations per n.
+    // If x1  + x2 + x3 is A and x2 + x3 + x4 is B, then B - A > 0 is:
+    // (x1+x2+x3) - (x2+x3+x4) > 0 OR x1 - x4 > 0. This is a single compare per n. 
 
     for j in 3..x.len() {
         let avg1 = sum_last_three(x, j);
         let avg0 = sum_last_three(x, j-1);
 
         if avg1 > avg0 {
+            count += 1;
+        }
+    }
+
+    return count;
+}
+
+fn fourth_delta(x: &[i32]) -> i32 {
+
+    let mut count:i32 = 0;
+    for j in 3..x.len() {
+        if x[j] > x[j-3] {
             count += 1;
         }
     }
@@ -2116,4 +2135,21 @@ mod tests {
 
         assert_eq!(average_increases(&measurements), 5);
     }
+
+    #[test]
+    fn test_fourth_delta() {
+        let measurements: [i32; 10] = [199,
+                                200,
+                                208, // 607
+                                210, // 618
+                                200, // 618
+                                207, // 617
+                                240, // 647
+                                269, // 716
+                                260, // 769
+                                263];// 792
+
+        assert_eq!(fourth_delta(&measurements), 5);
+    }
+
 }
