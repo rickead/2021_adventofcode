@@ -22,9 +22,17 @@ fn main() {
     println!("Calculate the horizontal position and depth you would have after following the planned course.");
     println!("What do you get if you multiply your final horizontal position by your final depth? ");
 
+    // Part 1: test input -> horizontal position 15, depth 10, area 150
+    // Part 2: test input -> horizontal position 15, depth 60, area 900, aim 10
     let sub_directions = read_input("./data.txt");
-    let final_position = propel_sub(sub_directions);
-    println!("     Horizontal position {}, depth {}, area {}", final_position.hor_position, final_position.depth, final_position.hor_position * final_position.depth);
+
+    // Part 1:
+    //let (final_position, aim) = propel_sub(sub_directions, normal_propulsion);
+
+    // Part 2:
+    let (final_position, aim) = propel_sub(sub_directions, aiming_propulsion);
+
+    println!("     Horizontal position {}, depth {}, aim {}, area {}", final_position.hor_position, final_position.depth, aim, final_position.hor_position * final_position.depth);
 }
 
 fn parse_direction(text: &str) -> Direction {
@@ -79,16 +87,40 @@ fn read_input(input_file: &str) -> Vec<Direction> {
     return directions;
 }
 
-fn propel_sub(directions: Vec<Direction>) -> Direction {
+fn normal_propulsion(d: Direction, aim: i32) -> (Direction, i32) {
+    return (d, aim);
+}
+
+
+// down X increases your aim by X units.
+// up X decreases your aim by X units.
+// forward X does two things:
+// It increases your horizontal position by X units.
+// It increases your depth by your aim multiplied by X.
+fn aiming_propulsion(d: Direction, aim: i32) -> (Direction, i32) {
+    if d.hor_position > 0 {
+        return (Direction{hor_position: d.hor_position, depth: aim * d.hor_position,}, aim);
+    }
+    else {
+        return (Direction{hor_position: 0, depth: 0,}, aim + d.depth);
+    }
+}
+
+fn propel_sub<F>(directions: Vec<Direction>, propulsion_directive: F) -> (Direction, i32)  where
+
+    F: Fn(Direction, i32) -> (Direction, i32) {
 
     let mut final_position = Direction{ hor_position:0, depth:0};
+    let mut aim:i32 = 0;
 
     for elem in directions {
-        final_position.hor_position += elem.hor_position;
-        final_position.depth += elem.depth;
+        let (new_propulsion, updated_aim) = propulsion_directive(elem, aim);
+        final_position.hor_position += new_propulsion.hor_position;
+        final_position.depth += new_propulsion.depth;
+        aim = updated_aim;
     }
 
-    return final_position;
+    return (final_position, aim);
 }
 
 #[cfg(test)]
@@ -143,8 +175,30 @@ mod tests {
 
         ];
 
-        let final_position = propel_sub(directions);
+        let (final_position, aim) = propel_sub(directions, normal_propulsion);
         assert_eq!(final_position.hor_position, 15);
         assert_eq!(final_position.depth, 10);
+        assert_eq!(aim, 0);
     }
+
+    #[test]
+    fn test_propel_and_aim_sub() {
+
+        let directions = vec![ 
+            Direction{hor_position:5,depth:0},
+            Direction{hor_position:0,depth:5},
+            Direction{hor_position:8,depth:0},
+            Direction{hor_position:0,depth:-3},
+            Direction{hor_position:0,depth:8},
+            Direction{hor_position:2,depth:0},
+
+        ];
+
+        let (final_position, aim) = propel_sub(directions, aiming_propulsion);
+        assert_eq!(final_position.hor_position, 15);
+        assert_eq!(final_position.depth, 60);
+        assert_eq!(aim, 10);
+    }
+
+
 }
